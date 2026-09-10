@@ -1,0 +1,385 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-09-10T00:00:00.000Z",
+  "__export_source": "codex.fhyl.tmdb-tvmaze",
+  "resources": [
+    {
+      "_id": "__WORKSPACE_ID__",
+      "parentId": null,
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "name": "TMDB + TVmaze — Filmes e Séries",
+      "description": "Coleção preparada a partir da especificação spec-apis-tmdb-tvmaze.md.",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "__BASE_ENVIRONMENT_ID__",
+      "parentId": "__WORKSPACE_ID__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "name": "Base Environment",
+      "data": {
+        "tmdb_base_url": "https://api.themoviedb.org/3",
+        "tmdb_read_access_token": "COLE_SEU_TMDB_READ_ACCESS_TOKEN_AQUI",
+        "tmdb_query": "Inception",
+        "tmdb_movie_id": "27205",
+        "tvmaze_base_url": "https://api.tvmaze.com",
+        "tvmaze_query": "Breaking Bad",
+        "tvmaze_show_id": "169"
+      },
+      "_type": "environment"
+    },
+    {
+      "_id": "__folder_tmdb__",
+      "parentId": "__WORKSPACE_ID__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "name": "TMDB — Filmes",
+      "description": "Busca, detalhes, títulos alternativos e busca opcional de séries no TMDB.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -100,
+      "_type": "request_group"
+    },
+    {
+      "_id": "__req_tmdb_search_pt__",
+      "parentId": "__folder_tmdb__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "url": "{{ _.tmdb_base_url }}/search/movie",
+      "name": "Buscar filme — pt-BR",
+      "description": "Busca filmes em português do Brasil. Se não retornar algo relevante, use a requisição en-US.",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "id": "pair_tmdb_search_pt_query",
+          "name": "query",
+          "value": "{{ _.tmdb_query }}",
+          "description": "Termo de busca.",
+          "disabled": false
+        },
+        {
+          "id": "pair_tmdb_search_pt_language",
+          "name": "language",
+          "value": "pt-BR",
+          "description": "Idioma da resposta.",
+          "disabled": false
+        },
+        {
+          "id": "pair_tmdb_search_pt_page",
+          "name": "page",
+          "value": "1",
+          "description": "Página de resultados.",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.tmdb_read_access_token }}"
+        },
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -100,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "__req_tmdb_search_en__",
+      "parentId": "__folder_tmdb__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "url": "{{ _.tmdb_base_url }}/search/movie",
+      "name": "Buscar filme — en-US (fallback)",
+      "description": "Fallback da busca de filme quando a busca pt-BR estiver vazia ou pouco relevante.",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "id": "pair_tmdb_search_en_query",
+          "name": "query",
+          "value": "{{ _.tmdb_query }}",
+          "description": "Use o mesmo termo da busca pt-BR.",
+          "disabled": false
+        },
+        {
+          "id": "pair_tmdb_search_en_language",
+          "name": "language",
+          "value": "en-US",
+          "description": "Idioma do fallback.",
+          "disabled": false
+        },
+        {
+          "id": "pair_tmdb_search_en_page",
+          "name": "page",
+          "value": "1",
+          "description": "Página de resultados.",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.tmdb_read_access_token }}"
+        },
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -90,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "__req_tmdb_details__",
+      "parentId": "__folder_tmdb__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "url": "{{ _.tmdb_base_url }}/movie/{{ _.tmdb_movie_id }}",
+      "name": "Detalhes do filme",
+      "description": "Busca runtime, gêneros, países, imagens, sinopse e demais metadados do filme.",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "id": "pair_tmdb_details_language",
+          "name": "language",
+          "value": "pt-BR",
+          "description": "Idioma da resposta.",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.tmdb_read_access_token }}"
+        },
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -80,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "__req_tmdb_alternative_titles__",
+      "parentId": "__folder_tmdb__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "url": "{{ _.tmdb_base_url }}/movie/{{ _.tmdb_movie_id }}/alternative_titles",
+      "name": "Títulos alternativos do filme",
+      "description": "Retorna títulos alternativos. Para o título brasileiro, procure o item com iso_3166_1 igual a BR.",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.tmdb_read_access_token }}"
+        },
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -70,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "__req_tmdb_search_tv__",
+      "parentId": "__folder_tmdb__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "url": "{{ _.tmdb_base_url }}/search/tv",
+      "name": "Buscar série no TMDB — opcional",
+      "description": "Opcional: use para obter título localizado de uma série e cruzar com os dados do TVmaze.",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "id": "pair_tmdb_search_tv_query",
+          "name": "query",
+          "value": "{{ _.tvmaze_query }}",
+          "description": "Nome original ou termo de busca da série.",
+          "disabled": false
+        },
+        {
+          "id": "pair_tmdb_search_tv_language",
+          "name": "language",
+          "value": "pt-BR",
+          "description": "Idioma do título retornado.",
+          "disabled": false
+        },
+        {
+          "id": "pair_tmdb_search_tv_page",
+          "name": "page",
+          "value": "1",
+          "description": "Página de resultados.",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.tmdb_read_access_token }}"
+        },
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -60,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "__folder_tvmaze__",
+      "parentId": "__WORKSPACE_ID__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "name": "TVmaze — Séries",
+      "description": "Busca, detalhes e episódios de séries no TVmaze.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -50,
+      "_type": "request_group"
+    },
+    {
+      "_id": "__req_tvmaze_search__",
+      "parentId": "__folder_tvmaze__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "url": "{{ _.tvmaze_base_url }}/search/shows",
+      "name": "Buscar série",
+      "description": "Retorna score e show. O ID útil está em show.id.",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "id": "pair_tvmaze_search_query",
+          "name": "q",
+          "value": "{{ _.tvmaze_query }}",
+          "description": "Termo de busca da série.",
+          "disabled": false
+        }
+      ],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -50,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "__req_tvmaze_details__",
+      "parentId": "__folder_tvmaze__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "url": "{{ _.tvmaze_base_url }}/shows/{{ _.tvmaze_show_id }}",
+      "name": "Detalhes da série",
+      "description": "Busca dados completos da série, incluindo status, rede, agenda, gêneros, nota e imagens.",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -40,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "__req_tvmaze_episodes__",
+      "parentId": "__folder_tvmaze__",
+      "modified": 1788998400000,
+      "created": 1788998400000,
+      "url": "{{ _.tvmaze_base_url }}/shows/{{ _.tvmaze_show_id }}/episodes",
+      "name": "Episódios da série",
+      "description": "Endpoint opcional para progresso por episódio no futuro.",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -30,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    }
+  ]
+}

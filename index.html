@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Protótipo do catálogo de filmes e séries do Fhyl usando a API do TMDB."
+    />
+    <title>Fhyl — Filmes e Séries</title>
+    <link rel="preconnect" href="https://image.tmdb.org" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="./" aria-label="Fhyl início">
+          <span class="brand-mark">F</span>
+          <span>fhyl</span>
+        </a>
+
+        <div class="header-note">protótipo de catálogo</div>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">sua próxima sessão começa aqui</p>
+          <h1 id="page-title">Encontre um filme ou série.</h1>
+          <p class="hero-description">
+            Pesquise filmes e séries no TMDB em português e, quando necessário,
+            tentamos também o catálogo em inglês.
+          </p>
+        </div>
+
+        <form class="search-bar" id="search-form">
+          <label class="sr-only" for="search-input">Nome do filme ou série</label>
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input
+            id="search-input"
+            name="query"
+            type="search"
+            placeholder="Digite o nome do filme ou série..."
+            autocomplete="off"
+            required
+          />
+          <button class="button button-primary" type="submit">Buscar</button>
+        </form>
+
+      </section>
+
+      <section class="results-section" aria-labelledby="results-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">explore</p>
+            <h2 id="results-title">Resultados</h2>
+          </div>
+          <p class="result-meta" id="result-meta"></p>
+        </div>
+
+        <div class="notice" id="notice" role="status" hidden></div>
+
+        <div class="loading-state" id="loading-state" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Buscando filmes...</span>
+        </div>
+
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon" aria-hidden="true">✦</div>
+          <h3>Comece uma busca</h3>
+          <p>Digite o nome de um filme ou série para ver pôster, sinopse, nota e detalhes.</p>
+        </div>
+
+        <div class="movie-grid" id="movie-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="lists-section" aria-labelledby="lists-title">
+        <div class="section-heading lists-heading">
+          <div>
+            <p class="eyebrow">organize do seu jeito</p>
+            <h2 id="lists-title">Suas listas</h2>
+          </div>
+          <button class="button button-primary" id="create-list-button" type="button">
+            + Criar lista
+          </button>
+        </div>
+
+        <form class="create-list-form" id="create-list-form" hidden>
+          <div class="form-field">
+            <label for="list-name-input">Nome da nova lista</label>
+            <input
+              id="list-name-input"
+              type="text"
+              maxlength="40"
+              placeholder="Ex.: Filmes para maratonar"
+              autocomplete="off"
+              required
+            />
+          </div>
+          <div class="form-actions">
+            <button class="button button-secondary" id="cancel-list-button" type="button">
+              Cancelar
+            </button>
+            <button class="button button-primary" type="submit">Criar lista</button>
+          </div>
+          <p class="list-form-status" id="list-form-status" role="status"></p>
+        </form>
+
+        <div class="lists-grid" id="lists-grid" aria-live="polite"></div>
+        <div class="list-view-panel" id="list-view-panel" hidden>
+          <div class="list-view-heading">
+            <div>
+              <p class="eyebrow">lista selecionada</p>
+              <h3 id="list-view-title">Lista</h3>
+            </div>
+            <button class="button button-secondary" id="close-list-view" type="button">
+              Fechar
+            </button>
+          </div>
+          <div class="list-view-grid" id="list-view-grid"></div>
+          <div class="list-view-empty" id="list-view-empty" hidden>
+            <p>Esta lista ainda está vazia.</p>
+            <span>Pesquise um filme e use “+ Adicionar à lista”.</span>
+          </div>
+        </div>
+        <p class="section-footnote">
+          As três listas modelo ficam sempre disponíveis. As listas personalizadas
+          são salvas somente neste navegador durante o protótipo.
+        </p>
+      </section>
+    </main>
+
+    <div class="modal-backdrop" id="modal-backdrop" hidden>
+      <section
+        class="details-modal"
+        id="details-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="details-title"
+      >
+        <button class="modal-close" id="modal-close" type="button" aria-label="Fechar detalhes">
+          ×
+        </button>
+        <div class="details-content" id="details-content"></div>
+      </section>
+    </div>
+
+    <div class="list-picker-backdrop" id="list-picker-backdrop" hidden>
+      <section
+        class="list-picker-dialog"
+        id="list-picker-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="list-picker-title"
+      >
+        <button class="modal-close" id="list-picker-close" type="button" aria-label="Fechar seleção de lista">
+          ×
+        </button>
+        <p class="eyebrow">organizar filme</p>
+        <h2 id="list-picker-title">Adicionar à lista</h2>
+        <p class="list-picker-description" id="list-picker-description"></p>
+        <div class="list-picker-options" id="list-picker-options"></div>
+        <p class="list-picker-status" id="list-picker-status" role="status"></p>
+      </section>
+    </div>
+
+    <footer class="site-footer">
+      <p>Dados de filmes e séries fornecidos por <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a>.</p>
+      <p>Protótipo local — listas salvas apenas neste navegador.</p>
+    </footer>
+  </body>
+</html>
