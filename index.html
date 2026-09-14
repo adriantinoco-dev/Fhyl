@@ -7,9 +7,16 @@
       name="description"
       content="Protótipo do catálogo de filmes e séries do Fhyl usando a API do TMDB."
     />
+    <script>
+      (() => {
+        const storedUsername = window.localStorage.getItem("fhyl-username")?.trim();
+        if (!storedUsername) window.location.replace("onboarding.html");
+      })();
+    </script>
     <title>Fhyl — Filmes e Séries</title>
     <link rel="preconnect" href="https://image.tmdb.org" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="shared.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
@@ -20,7 +27,7 @@
           <span>fhyl</span>
         </a>
 
-        <div class="header-note">protótipo de catálogo</div>
+        <div class="header-note welcome-message" id="welcome-message"></div>
       </div>
     </header>
 
@@ -28,10 +35,10 @@
       <section class="hero" aria-labelledby="page-title">
         <div class="hero-copy">
           <p class="eyebrow">sua próxima sessão começa aqui</p>
-          <h1 id="page-title">Encontre um filme ou série.</h1>
+          <h1 id="page-title">Descubra o que está em alta.</h1>
           <p class="hero-description">
-            Pesquise filmes e séries no TMDB em português e, quando necessário,
-            tentamos também o catálogo em inglês.
+            Explore filmes e séries que estão chamando atenção nesta semana e
+            descubra sua próxima sessão.
           </p>
         </div>
 
@@ -55,7 +62,7 @@
         <div class="section-heading">
           <div>
             <p class="eyebrow">explore</p>
-            <h2 id="results-title">Resultados</h2>
+            <h2 id="results-title">Em alta nesta semana</h2>
           </div>
           <p class="result-meta" id="result-meta"></p>
         </div>
@@ -64,13 +71,13 @@
 
         <div class="loading-state" id="loading-state" hidden>
           <span class="spinner" aria-hidden="true"></span>
-          <span>Buscando filmes...</span>
+          <span>Carregando títulos em alta...</span>
         </div>
 
         <div class="empty-state" id="empty-state">
           <div class="empty-icon" aria-hidden="true">✦</div>
-          <h3>Comece uma busca</h3>
-          <p>Digite o nome de um filme ou série para ver pôster, sinopse, nota e detalhes.</p>
+          <h3>Nenhum título em alta</h3>
+          <p>Não encontramos títulos para exibir agora. Tente novamente mais tarde.</p>
         </div>
 
         <div class="movie-grid" id="movie-grid" aria-live="polite"></div>
@@ -82,31 +89,7 @@
             <p class="eyebrow">organize do seu jeito</p>
             <h2 id="lists-title">Suas listas</h2>
           </div>
-          <button class="button button-primary" id="create-list-button" type="button">
-            + Criar lista
-          </button>
         </div>
-
-        <form class="create-list-form" id="create-list-form" hidden>
-          <div class="form-field">
-            <label for="list-name-input">Nome da nova lista</label>
-            <input
-              id="list-name-input"
-              type="text"
-              maxlength="40"
-              placeholder="Ex.: Filmes para maratonar"
-              autocomplete="off"
-              required
-            />
-          </div>
-          <div class="form-actions">
-            <button class="button button-secondary" id="cancel-list-button" type="button">
-              Cancelar
-            </button>
-            <button class="button button-primary" type="submit">Criar lista</button>
-          </div>
-          <p class="list-form-status" id="list-form-status" role="status"></p>
-        </form>
 
         <div class="lists-grid" id="lists-grid" aria-live="polite"></div>
         <div class="list-view-panel" id="list-view-panel" hidden>
@@ -122,12 +105,11 @@
           <div class="list-view-grid" id="list-view-grid"></div>
           <div class="list-view-empty" id="list-view-empty" hidden>
             <p>Esta lista ainda está vazia.</p>
-            <span>Pesquise um filme e use “+ Adicionar à lista”.</span>
+            <span>Abra o menu de contexto de um título e escolha esta lista.</span>
           </div>
         </div>
         <p class="section-footnote">
-          As três listas modelo ficam sempre disponíveis. As listas personalizadas
-          são salvas somente neste navegador durante o protótipo.
+          Os títulos salvos ficam neste navegador e podem ser organizados nas três listas modelo.
         </p>
       </section>
     </main>
@@ -144,25 +126,6 @@
           ×
         </button>
         <div class="details-content" id="details-content"></div>
-      </section>
-    </div>
-
-    <div class="list-picker-backdrop" id="list-picker-backdrop" hidden>
-      <section
-        class="list-picker-dialog"
-        id="list-picker-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="list-picker-title"
-      >
-        <button class="modal-close" id="list-picker-close" type="button" aria-label="Fechar seleção de lista">
-          ×
-        </button>
-        <p class="eyebrow">organizar filme</p>
-        <h2 id="list-picker-title">Adicionar à lista</h2>
-        <p class="list-picker-description" id="list-picker-description"></p>
-        <div class="list-picker-options" id="list-picker-options"></div>
-        <p class="list-picker-status" id="list-picker-status" role="status"></p>
       </section>
     </div>
 

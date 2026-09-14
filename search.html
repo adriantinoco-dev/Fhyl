@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Resultados de busca do catálogo de filmes e séries do Fhyl."
+    />
+    <script>
+      (() => {
+        const storedUsername = window.localStorage.getItem("fhyl-username")?.trim();
+        if (!storedUsername) window.location.replace("onboarding.html");
+      })();
+    </script>
+    <title>Fhyl — Busca</title>
+    <link rel="preconnect" href="https://image.tmdb.org" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="shared.js" defer></script>
+    <script src="search.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="./" aria-label="Fhyl início">
+          <span class="brand-mark">F</span>
+          <span>fhyl</span>
+        </a>
+
+        <div class="header-note welcome-message" id="welcome-message"></div>
+      </div>
+    </header>
+
+    <main class="page-shell search-page">
+      <section class="results-section" aria-labelledby="search-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">resultados da busca</p>
+            <h1 id="search-title">Busca</h1>
+          </div>
+          <a class="button button-secondary" href="./">Voltar para home</a>
+        </div>
+
+        <p class="search-query" id="search-query"></p>
+        <p class="result-meta" id="result-meta"></p>
+        <div class="notice" id="notice" role="status" hidden></div>
+
+        <div class="loading-state" id="loading-state" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Buscando filmes e séries...</span>
+        </div>
+
+        <div class="empty-state" id="empty-state" hidden>
+          <div class="empty-icon" aria-hidden="true">✦</div>
+          <h3>Nenhum resultado encontrado</h3>
+          <p>Tente buscar por outro nome ou pelo título original.</p>
+        </div>
+
+        <div class="movie-grid" id="movie-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Dados de filmes e séries fornecidos por <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a>.</p>
+      <p>Protótipo local — listas salvas apenas neste navegador.</p>
+    </footer>
+  </body>
+</html>

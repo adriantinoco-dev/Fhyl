@@ -19,33 +19,40 @@ Use qualquer servidor HTTP estático apontando para esta pasta. Abrir `index.htm
 
 ## Primeiro uso
 
-1. Obtenha no TMDB o **API Read Access Token**.
-2. Abra `app.js` e localize a constante `TMDB_TOKEN` no início do arquivo.
-3. Cole o token entre as aspas, salve o arquivo e recarregue o site.
-4. Digite o nome de um filme ou série, como `Duna`, `The Office` ou `Breaking Bad`.
-5. Clique em **Buscar**.
-6. Clique em um card para abrir os detalhes completos.
-7. Na seção **Suas listas**, clique em **+ Criar lista** para criar uma lista personalizada.
-8. Depois de pesquisar, clique em **+ Adicionar à lista** no card de um filme.
-9. Escolha **Assistidos**, **Quero Assistir**, **Compartilhado** ou uma lista personalizada.
-10. Clique em uma lista para abrir seus filmes. Dentro dela, você pode removê-los.
+1. Abra a aplicação e informe seu nome na tela inicial.
+2. Obtenha no TMDB o **API Read Access Token**.
+3. Abra `shared.js` e localize a constante `TMDB_TOKEN` no início do arquivo.
+4. Cole o token entre as aspas, salve o arquivo e recarregue o site.
+5. Aguarde o catálogo de títulos em alta carregar automaticamente.
+6. Digite um filme ou série na busca e clique em **Buscar** para abrir os resultados em uma nova janela.
+7. Clique em um card para abrir os detalhes completos.
+8. Na seção **Suas listas**, escolha uma das três prateleiras disponíveis.
+9. Clique com o botão direito em um card para abrir o menu de listas.
+10. Escolha **Favoritos**, **Assistido** ou **Quero Assistir**.
+11. Clique em **Ver lista** para abrir os títulos salvos. Dentro dela, você pode removê-los.
 
-O token é carregado exclusivamente da constante `TMDB_TOKEN` no arquivo `app.js`.
+A barra de busca abre os resultados em uma janela separada.
+
+O token é carregado exclusivamente da constante `TMDB_TOKEN` no arquivo `shared.js`.
 
 ## O que o protótipo faz
 
-- Pesquisa filmes e séries no endpoint `/search/multi` em `pt-BR`.
-- Se não houver resultado, repete a pesquisa em `en-US`.
-- Filtra pessoas retornadas pela busca combinada, mantendo somente filmes e séries.
+- Carrega automaticamente títulos em alta no endpoint `/trending/all/week` em `pt-BR`.
+- Solicita o nome no primeiro acesso e exibe uma saudação no header da home.
+- Busca filmes e séries no endpoint `/search/multi` em `pt-BR`, usando `en-US` como fallback.
+- Filtra pessoas retornadas pela busca e pelo catálogo em alta, mantendo somente filmes e séries.
+- Abre as buscas em uma janela nomeada `fhylSearch`, sem substituir o catálogo em alta da home.
+- Repete a busca em `en-US` quando não há resultados em português.
 - Exibe tipo, título, ano, pôster, sinopse e nota.
 - Busca detalhes no endpoint `/movie/{id}` ou `/tv/{id}`, sempre com `language=pt-BR`.
 - Exibe duração, gêneros, países, lançamento, sinopse, pôster e backdrop.
 - Monta as URLs de imagens do TMDB a partir de `poster_path` e `backdrop_path`.
-- Mantém as listas modelo **Assistidos**, **Quero Assistir** e **Compartilhado**.
-- Permite criar listas personalizadas com nome próprio.
-- Permite adicionar um filme a uma ou mais listas pelo botão **+ Adicionar à lista**.
+- Mantém as três listas modelo **Favoritos**, **Assistido** e **Quero Assistir**.
+- Exibe cada lista como uma prateleira horizontal com os pôsteres salvos.
+- Permite adicionar ou remover um filme das listas pelo menu de contexto.
 - Permite abrir cada lista para ver os filmes salvos e removê-los.
 - Salva as listas e os filmes adicionados no `localStorage` deste navegador.
+- Migra listas antigas, preservando **Assistidos** e **Quero Assistir**; listas **Compartilhado** e personalizadas antigas são descartadas.
 
 ## Fora do escopo desta etapa
 
@@ -54,4 +61,4 @@ O token é carregado exclusivamente da constante `TMDB_TOKEN` no arquivo `app.js
 - Status e avaliações persistentes.
 - Token protegido por servidor.
 
-O consumo direto da API pelo navegador é adequado para este protótipo local. Como o token escrito em `app.js` fica visível para qualquer pessoa que tenha acesso aos arquivos ou ao site publicado, não use esta abordagem como armazenamento secreto em produção; a etapa futura deverá usar um backend ou outra estratégia de proteção.
+O consumo direto da API pelo navegador é adequado para este protótipo local. Como o token escrito em `shared.js` fica visível para qualquer pessoa que tenha acesso aos arquivos ou ao site publicado, não use esta abordagem como armazenamento secreto em produção; a etapa futura deverá usar um backend ou outra estratégia de proteção.
