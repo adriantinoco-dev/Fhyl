@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Protótipo do catálogo de filmes e séries do Fhyl usando a API do TMDB."
+      content="Catálogo de filmes e séries do Fhyl usando a API do TMDB."
     />
-    <script>
-      (() => {
-        const storedUsername = window.localStorage.getItem("fhyl-username")?.trim();
-        if (!storedUsername) window.location.replace("onboarding.html");
-      })();
-    </script>
-    <title>Fhyl — Filmes e Séries</title>
+    <title>Fhyl</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="preconnect" href="https://image.tmdb.org" />
     <link rel="stylesheet" href="styles.css" />
     <script src="shared.js" defer></script>
@@ -22,99 +22,152 @@
   <body>
     <header class="site-header">
       <div class="header-inner">
-        <a class="brand" href="./" aria-label="Fhyl início">
-          <span class="brand-mark">F</span>
-          <span>fhyl</span>
-        </a>
-
-        <div class="header-note welcome-message" id="welcome-message"></div>
+        <a class="brand" href="#/" aria-label="Fhyl início">Fhyl</a>
+        <p class="welcome-message" id="welcome-message"></p>
       </div>
     </header>
 
     <main class="page-shell">
-      <section class="hero" aria-labelledby="page-title">
-        <div class="hero-copy">
-          <p class="eyebrow">sua próxima sessão começa aqui</p>
-          <h1 id="page-title">Descubra o que está em alta.</h1>
-          <p class="hero-description">
-            Explore filmes e séries que estão chamando atenção nesta semana e
-            descubra sua próxima sessão.
+      <section class="app-view" id="home-view" aria-labelledby="page-title">
+        <section class="hero">
+          <div class="hero-copy">
+            <h1 id="page-title">Filmes e séries em alta</h1>
+            <p class="hero-description">
+              Explore os títulos mais populares da semana e organize o que você
+              quer assistir.
+            </p>
+          </div>
+
+          <form class="search-bar" id="search-form">
+            <label class="sr-only" for="search-input">Nome do filme ou série</label>
+            <input
+              id="search-input"
+              name="query"
+              type="search"
+              placeholder="Buscar filme ou série..."
+              autocomplete="off"
+              required
+            />
+            <button class="button button-primary" type="submit">Buscar</button>
+          </form>
+        </section>
+
+        <section class="results-section" aria-labelledby="results-title">
+          <div class="section-heading">
+            <h2 id="results-title">Em alta esta semana</h2>
+            <p class="result-meta" id="result-meta"></p>
+          </div>
+
+          <div class="notice" id="notice" role="status" hidden></div>
+
+          <div class="loading-state" id="loading-state" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Carregando títulos...</span>
+          </div>
+
+          <div class="empty-state" id="empty-state">
+            <h3>Nenhum título disponível</h3>
+            <p>Não encontramos títulos para exibir agora. Tente novamente mais tarde.</p>
+          </div>
+
+          <div class="movie-grid" id="movie-grid" aria-live="polite"></div>
+        </section>
+
+        <section class="lists-section" aria-labelledby="lists-title">
+          <div class="section-heading lists-heading">
+            <h2 id="lists-title">Minhas listas</h2>
+          </div>
+
+          <div class="lists-grid" id="lists-grid" aria-live="polite"></div>
+
+          <p class="section-footnote">
+            Os títulos salvos ficam neste navegador.
           </p>
-        </div>
-
-        <form class="search-bar" id="search-form">
-          <label class="sr-only" for="search-input">Nome do filme ou série</label>
-          <span class="search-icon" aria-hidden="true">⌕</span>
-          <input
-            id="search-input"
-            name="query"
-            type="search"
-            placeholder="Digite o nome do filme ou série..."
-            autocomplete="off"
-            required
-          />
-          <button class="button button-primary" type="submit">Buscar</button>
-        </form>
-
+        </section>
       </section>
 
-      <section class="results-section" aria-labelledby="results-title">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">explore</p>
-            <h2 id="results-title">Em alta nesta semana</h2>
-          </div>
-          <p class="result-meta" id="result-meta"></p>
-        </div>
+      <section class="app-view onboarding-page" id="onboarding-view" aria-labelledby="onboarding-title" hidden>
+        <div class="onboarding-card">
+          <h1 id="onboarding-title">Como podemos chamar você?</h1>
+          <p class="onboarding-description">
+            Seu nome será usado para personalizar a experiência no catálogo.
+          </p>
 
-        <div class="notice" id="notice" role="status" hidden></div>
-
-        <div class="loading-state" id="loading-state" hidden>
-          <span class="spinner" aria-hidden="true"></span>
-          <span>Carregando títulos em alta...</span>
-        </div>
-
-        <div class="empty-state" id="empty-state">
-          <div class="empty-icon" aria-hidden="true">✦</div>
-          <h3>Nenhum título em alta</h3>
-          <p>Não encontramos títulos para exibir agora. Tente novamente mais tarde.</p>
-        </div>
-
-        <div class="movie-grid" id="movie-grid" aria-live="polite"></div>
-      </section>
-
-      <section class="lists-section" aria-labelledby="lists-title">
-        <div class="section-heading lists-heading">
-          <div>
-            <p class="eyebrow">organize do seu jeito</p>
-            <h2 id="lists-title">Suas listas</h2>
-          </div>
-        </div>
-
-        <div class="lists-grid" id="lists-grid" aria-live="polite"></div>
-        <div class="list-view-panel" id="list-view-panel" hidden>
-          <div class="list-view-heading">
-            <div>
-              <p class="eyebrow">lista selecionada</p>
-              <h3 id="list-view-title">Lista</h3>
+          <form class="onboarding-form" id="onboarding-form">
+            <div class="form-field">
+              <label for="username-input">Nome</label>
+              <input
+                id="username-input"
+                name="username"
+                type="text"
+                maxlength="40"
+                autocomplete="name"
+                placeholder="Digite seu nome"
+                required
+              />
             </div>
-            <button class="button button-secondary" id="close-list-view" type="button">
-              Fechar
+            <button class="button button-primary" type="submit">Continuar</button>
+            <p class="onboarding-status" id="onboarding-status" role="status"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="app-view search-page" id="search-view" aria-labelledby="search-title" hidden>
+        <section class="results-section">
+          <div class="section-heading">
+            <div class="section-heading-main">
+              <h1 id="search-title">Busca</h1>
+              <p class="search-query" id="search-query"></p>
+            </div>
+            <button class="button button-secondary" id="search-home-link" type="button">
+              Voltar
             </button>
           </div>
-          <div class="list-view-grid" id="list-view-grid"></div>
-          <div class="list-view-empty" id="list-view-empty" hidden>
-            <p>Esta lista ainda está vazia.</p>
-            <span>Abra o menu de contexto de um título e escolha esta lista.</span>
+
+          <p class="result-meta" id="search-result-meta"></p>
+          <div class="notice" id="search-notice" role="status" hidden></div>
+
+          <div class="loading-state" id="search-loading-state" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Buscando...</span>
           </div>
-        </div>
-        <p class="section-footnote">
-          Os títulos salvos ficam neste navegador e podem ser organizados nas três listas modelo.
-        </p>
+
+          <div class="empty-state" id="search-empty-state" hidden>
+            <h3>Nenhum resultado</h3>
+            <p>Tente buscar por outro nome ou pelo título original.</p>
+          </div>
+
+          <div class="movie-grid" id="search-movie-grid" aria-live="polite"></div>
+        </section>
       </section>
     </main>
 
-    <div class="modal-backdrop" id="modal-backdrop" hidden>
+    <div class="modal-backdrop list-modal-backdrop" id="list-modal-backdrop" hidden>
+      <section
+        class="list-modal"
+        id="list-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="list-view-title"
+      >
+        <button class="modal-close" id="list-modal-close" type="button" aria-label="Fechar lista">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="list-modal-header">
+          <h2 id="list-view-title">Lista</h2>
+          <p class="list-modal-count" id="list-view-count"></p>
+        </div>
+        <div class="list-view-empty" id="list-view-empty" hidden>
+          <p>Esta lista ainda está vazia.</p>
+          <span>Clique com o botão direito em um título para adicioná-lo.</span>
+        </div>
+        <div class="movie-grid list-modal-grid" id="list-view-grid"></div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop details-modal-backdrop" id="modal-backdrop" hidden>
       <section
         class="details-modal"
         id="details-modal"
@@ -123,15 +176,17 @@
         aria-labelledby="details-title"
       >
         <button class="modal-close" id="modal-close" type="button" aria-label="Fechar detalhes">
-          ×
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
         </button>
         <div class="details-content" id="details-content"></div>
       </section>
     </div>
 
     <footer class="site-footer">
-      <p>Dados de filmes e séries fornecidos por <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a>.</p>
-      <p>Protótipo local — listas salvas apenas neste navegador.</p>
+      <p>Dados fornecidos por <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a>.</p>
+      <p>Listas salvas localmente neste navegador.</p>
     </footer>
   </body>
 </html>

@@ -10,9 +10,9 @@ const FhylShared = (() => {
   const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyMjZkMTM3ZDk3M2YwNWVlMGQxY2Q0ZGM2NGM0OTEzZiIsIm5iZiI6MTc4OTA0NjYyMC4yMDg5OTk5LCJzdWIiOiI2YWEyYWY1Y2NjNTA1YmJhOGM3MTY2ZGQiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.ieEmSe-LrthHuohU04CyNFmDxGRLbf4V8TDx8L1Y41w";
 
   const DEFAULT_LISTS = [
-    { id: "favorites", name: "Favoritos", type: "system", icon: "★" },
-    { id: "watched", name: "Assistido", type: "system", icon: "✓" },
-    { id: "to-watch", name: "Quero Assistir", type: "system", icon: "＋" },
+    { id: "favorites", name: "Favoritos", type: "system", icon: "" },
+    { id: "watched", name: "Assistidos", type: "system", icon: "" },
+    { id: "to-watch", name: "Quero assistir", type: "system", icon: "" },
   ];
 
   function normalizeToken(value) {
@@ -289,7 +289,7 @@ const FhylShared = (() => {
 
         const name = document.createElement("span");
         name.className = "list-context-menu-option-name";
-        name.textContent = `${list.icon} ${list.name}`;
+        name.textContent = list.name;
 
         const count = document.createElement("span");
         count.className = "list-context-menu-option-count";

@@ -24,14 +24,15 @@ Use qualquer servidor HTTP estático apontando para esta pasta. Abrir `index.htm
 3. Abra `shared.js` e localize a constante `TMDB_TOKEN` no início do arquivo.
 4. Cole o token entre as aspas, salve o arquivo e recarregue o site.
 5. Aguarde o catálogo de títulos em alta carregar automaticamente.
-6. Digite um filme ou série na busca e clique em **Buscar** para abrir os resultados em uma nova janela.
-7. Clique em um card para abrir os detalhes completos.
+6. Digite um filme ou série na busca e clique em **Buscar** para navegar para a rota interna de resultados.
+7. Clique em um card ou em um pôster salvo para abrir os detalhes completos.
 8. Na seção **Suas listas**, escolha uma das três prateleiras disponíveis.
 9. Clique com o botão direito em um card para abrir o menu de listas.
 10. Escolha **Favoritos**, **Assistido** ou **Quero Assistir**.
 11. Clique em **Ver lista** para abrir os títulos salvos. Dentro dela, você pode removê-los.
+12. Nos detalhes, use **Favoritar** ou **Marcar como assistido** para atualizar as listas diretamente.
 
-A barra de busca abre os resultados em uma janela separada.
+As telas de onboarding, home e busca vivem no mesmo `index.html`. As rotas internas usam o hash da URL: `index.html#/onboarding`, `index.html#/` e `index.html#/search?q=...`.
 
 O token é carregado exclusivamente da constante `TMDB_TOKEN` no arquivo `shared.js`.
 
@@ -41,15 +42,18 @@ O token é carregado exclusivamente da constante `TMDB_TOKEN` no arquivo `shared
 - Solicita o nome no primeiro acesso e exibe uma saudação no header da home.
 - Busca filmes e séries no endpoint `/search/multi` em `pt-BR`, usando `en-US` como fallback.
 - Filtra pessoas retornadas pela busca e pelo catálogo em alta, mantendo somente filmes e séries.
-- Abre as buscas em uma janela nomeada `fhylSearch`, sem substituir o catálogo em alta da home.
+- Navega para os resultados dentro do mesmo `index.html`, sem abrir janelas ou abas adicionais.
 - Repete a busca em `en-US` quando não há resultados em português.
 - Exibe tipo, título, ano, pôster, sinopse e nota.
-- Busca detalhes no endpoint `/movie/{id}` ou `/tv/{id}`, sempre com `language=pt-BR`.
-- Exibe duração, gêneros, países, lançamento, sinopse, pôster e backdrop.
+- Busca detalhes no endpoint `/movie/{id}` ou `/tv/{id}`, sempre com `language=pt-BR`, incluindo créditos e vídeos.
+- Exibe duração, gêneros, países, lançamento, sinopse, pôster, backdrop e elenco principal.
+- Oferece link para trailer do YouTube quando o TMDB disponibiliza um vídeo.
 - Monta as URLs de imagens do TMDB a partir de `poster_path` e `backdrop_path`.
 - Mantém as três listas modelo **Favoritos**, **Assistido** e **Quero Assistir**.
 - Exibe cada lista como uma prateleira horizontal com os pôsteres salvos.
+- Abre o modal de detalhes ao clicar no pôster de qualquer lista.
 - Permite adicionar ou remover um filme das listas pelo menu de contexto.
+- Permite favoritar ou marcar como assistido diretamente no modal de detalhes.
 - Permite abrir cada lista para ver os filmes salvos e removê-los.
 - Salva as listas e os filmes adicionados no `localStorage` deste navegador.
 - Migra listas antigas, preservando **Assistidos** e **Quero Assistir**; listas **Compartilhado** e personalizadas antigas são descartadas.
