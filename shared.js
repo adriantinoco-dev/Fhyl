@@ -65,8 +65,35 @@ const FhylShared = (() => {
     return DEFAULT_LISTS.map((list) => normalizeList(getStoredList(list.id), list));
   }
 
+  function isMovieFavorited(movie, lists = null) {
+    if (!movie) return false;
+    const currentLists = Array.isArray(lists) ? lists : loadLists();
+    const favorites = currentLists.find((list) => list?.id === "favorites");
+    const movies = Array.isArray(favorites?.movies) ? favorites.movies : [];
+    return movies.some((item) => sameTitle(item, movie));
+  }
+
+  function updateAllFavoriteBadges(lists = null) {
+    const currentLists = Array.isArray(lists) ? lists : loadLists();
+    const cards = document.querySelectorAll(".movie-card[data-movie-id]");
+    cards.forEach((card) => {
+      const movieId = card.dataset.movieId;
+      const mediaType = card.dataset.mediaType || "movie";
+      const isFav = isMovieFavorited({ id: movieId, media_type: mediaType }, currentLists);
+      const badge = card.querySelector(".movie-favorite-badge");
+      if (badge) {
+        badge.classList.toggle("is-visible", isFav);
+        badge.setAttribute("aria-hidden", String(!isFav));
+      }
+    });
+  }
+
   function persistLists(lists, storage = globalThis.localStorage) {
     storage.setItem(LISTS_STORAGE_KEY, JSON.stringify(lists));
+    updateAllFavoriteBadges(lists);
+    if (typeof globalThis.dispatchEvent === "function") {
+      globalThis.dispatchEvent(new CustomEvent("fhyl:lists-changed", { detail: { lists } }));
+    }
   }
 
   function addMovieToList(lists, listId, movie) {
@@ -144,15 +171,29 @@ const FhylShared = (() => {
     return wrapper;
   }
 
-  function createMovieCard(movie, { onDetails, onContextMenu } = {}) {
+  function createFavoriteBadge(isFavorited = false) {
+    const badge = document.createElement("span");
+    badge.className = "movie-favorite-badge";
+    badge.setAttribute("aria-label", "Favorito");
+    badge.setAttribute("title", "Favorito");
+    badge.classList.toggle("is-visible", isFavorited);
+    badge.setAttribute("aria-hidden", String(!isFavorited));
+    badge.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+    return badge;
+  }
+
+  function createMovieCard(movie, { onDetails, onContextMenu, rank = null } = {}) {
     const title = textOrFallback(titleName(movie), titleOriginalName(movie));
     const card = document.createElement("article");
     card.className = "movie-card";
+    card.dataset.movieId = String(movie.id);
+    card.dataset.mediaType = movie.media_type || "movie";
 
     const cardMain = document.createElement("button");
     cardMain.type = "button";
     cardMain.className = "movie-card-main";
-    cardMain.setAttribute("aria-label", `Ver detalhes de ${title}`);
+    const rankLabel = rank == null ? "" : `, posição ${rank}`;
+    cardMain.setAttribute("aria-label", `Ver detalhes de ${title}${rankLabel}`);
     if (typeof onDetails === "function") {
       cardMain.addEventListener("click", () => onDetails(movie));
     }
@@ -165,10 +206,16 @@ const FhylShared = (() => {
     }
 
     const poster = createPoster(movie.poster_path, title);
-    const rating = document.createElement("span");
-    rating.className = "rating-pill";
-    rating.textContent = `★ ${formatRating(movie.vote_average)}`;
-    poster.append(rating);
+
+    const favBadge = createFavoriteBadge(isMovieFavorited(movie));
+    poster.append(favBadge);
+
+    if (rank == null) {
+      const rating = document.createElement("span");
+      rating.className = "rating-pill";
+      rating.textContent = `★ ${formatRating(movie.vote_average)}`;
+      poster.append(rating);
+    }
 
     const info = document.createElement("div");
     info.className = "movie-info";
@@ -180,15 +227,26 @@ const FhylShared = (() => {
     type.className = "movie-type";
     type.textContent = titleTypeLabel(movie);
 
-    const year = document.createElement("p");
-    year.className = "movie-year";
-    year.textContent = yearFromDate(titleDate(movie));
+    if (rank != null) {
+      const rankBadge = document.createElement("span");
+      rankBadge.className = "movie-rank";
+      rankBadge.textContent = `#${rank}`;
+      rankBadge.setAttribute("aria-label", `Posição ${rank}`);
+      rankBadge.setAttribute("aria-hidden", "true");
 
-    const overview = document.createElement("p");
-    overview.className = "movie-overview";
-    overview.textContent = textOrFallback(movie.overview, "Sinopse não disponível.");
+      const rankedRating = document.createElement("p");
+      rankedRating.className = "ranked-rating";
+      rankedRating.textContent = `★ ${formatRating(movie.vote_average)}`;
 
-    info.append(heading, type, year, overview);
+      const overview = document.createElement("p");
+      overview.className = "movie-overview";
+      overview.textContent = textOrFallback(movie.overview, "Sinopse não disponível.");
+
+      info.append(rankBadge, heading, type, rankedRating, overview);
+    } else {
+      info.append(heading, type);
+    }
+
     cardMain.append(poster, info);
     card.append(cardMain);
 
@@ -386,8 +444,11 @@ const FhylShared = (() => {
     formatDate,
     textOrFallback,
     createPoster,
+    createFavoriteBadge,
     createMovieCard,
     createListContextMenu,
+    isMovieFavorited,
+    updateAllFavoriteBadges,
     fetchJson,
     searchTitles,
   });

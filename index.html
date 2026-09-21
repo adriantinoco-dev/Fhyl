@@ -15,16 +15,50 @@
       rel="stylesheet"
     />
     <link rel="preconnect" href="https://image.tmdb.org" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/png" href="assets/fhyl-logo.png" />
+    <link rel="stylesheet" href="styles.css?v=3" />
     <script src="shared.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
     <header class="site-header">
       <div class="header-inner">
-        <a class="brand" href="#/" aria-label="Fhyl início">Fhyl</a>
-        <p class="welcome-message" id="welcome-message"></p>
+        <a class="brand" href="#/" aria-label="Fhyl início">
+          <img src="assets/fhyl-logo.png" alt="Fhyl" class="brand-logo" />
+        </a>
+        <div class="header-user-nav">
+          <form class="header-search-bar" id="header-search-form" hidden>
+            <label class="sr-only" for="header-search-input">Nome do filme ou série</label>
+            <input
+              id="header-search-input"
+              name="query"
+              type="search"
+              placeholder="Buscar filme ou série..."
+              autocomplete="off"
+              required
+            />
+            <button class="button button-primary" type="submit">Buscar</button>
+          </form>
+          <a class="category-nav-link header-lists-link" id="header-lists-link" href="#/minhas-listas" data-category-tab="minhas-listas" hidden>Minhas listas</a>
+          <p class="welcome-message" id="welcome-message"></p>
+        </div>
       </div>
+
+      <nav class="category-nav" id="category-nav" aria-label="Categorias de filmes" hidden>
+        <div class="category-nav-inner">
+          <a class="category-nav-link" href="#/categoria?tab=top-250" data-category-tab="top-250">Top 250</a>
+          <a class="category-nav-link" href="#/categoria?tab=acao" data-category-tab="acao">Ação</a>
+          <a class="category-nav-link" href="#/categoria?tab=comedia" data-category-tab="comedia">Comédia</a>
+          <a class="category-nav-link" href="#/categoria?tab=aventura" data-category-tab="aventura">Aventura</a>
+          <a class="category-nav-link" href="#/categoria?tab=animacao" data-category-tab="animacao">Animação</a>
+          <a class="category-nav-link" href="#/categoria?tab=terror" data-category-tab="terror">Terror</a>
+          <a class="category-nav-link" href="#/categoria?tab=herois" data-category-tab="herois">Heróis</a>
+          <a class="category-nav-link" href="#/categoria?tab=drama" data-category-tab="drama">Drama</a>
+          <a class="category-nav-link" href="#/categoria?tab=ficcao-cientifica" data-category-tab="ficcao-cientifica">Ficção científica</a>
+          <a class="category-nav-link" href="#/categoria?tab=fantasia" data-category-tab="fantasia">Fantasia</a>
+          <a class="category-nav-link" href="#/categoria?tab=suspense" data-category-tab="suspense">Suspense</a>
+                  </div>
+      </nav>
     </header>
 
     <main class="page-shell">
@@ -73,16 +107,33 @@
           <div class="movie-grid" id="movie-grid" aria-live="polite"></div>
         </section>
 
-        <section class="lists-section" aria-labelledby="lists-title">
-          <div class="section-heading lists-heading">
-            <h2 id="lists-title">Minhas listas</h2>
+      </section>
+
+      <section class="app-view category-page" id="category-view" aria-labelledby="category-title" hidden>
+        <section class="results-section">
+          <div class="section-heading">
+            <div class="section-heading-main">
+              <h1 id="category-title">Top 250</h1>
+              <p class="category-description" id="category-description"></p>
+            </div>
+            <a class="button button-secondary" href="#/">Início</a>
+          </div>
+          <div class="notice" id="category-notice" role="status" hidden></div>
+
+          <div class="loading-state" id="category-loading-state" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Carregando filmes...</span>
           </div>
 
-          <div class="lists-grid" id="lists-grid" aria-live="polite"></div>
+          <div class="empty-state" id="category-empty-state" hidden>
+            <h3>Nenhum filme disponível</h3>
+            <p>Não encontramos filmes para esta categoria agora.</p>
+          </div>
 
-          <p class="section-footnote">
-            Os títulos salvos ficam neste navegador.
-          </p>
+          <div class="movie-grid category-movie-grid" id="category-movie-grid" aria-live="polite"></div>
+          <div class="category-load-more" id="category-load-more" role="status" hidden>
+            Continue rolando para carregar mais filmes...
+          </div>
         </section>
       </section>
 
@@ -139,6 +190,15 @@
 
           <div class="movie-grid" id="search-movie-grid" aria-live="polite"></div>
         </section>
+      </section>
+
+      <section class="app-view my-lists-page" id="my-lists-view" aria-labelledby="my-lists-title" hidden>
+        <div class="section-heading">
+          <div class="section-heading-main">
+            <h1 id="my-lists-title">Minhas listas</h1>
+          </div>
+        </div>
+        <div class="my-lists-content" id="my-lists-content"></div>
       </section>
     </main>
 

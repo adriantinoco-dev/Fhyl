@@ -18,8 +18,11 @@ const {
   formatDate,
   textOrFallback,
   createPoster,
+  createFavoriteBadge,
   createMovieCard,
   createListContextMenu,
+  isMovieFavorited,
+  updateAllFavoriteBadges,
   fetchJson,
   searchTitles,
 } = globalThis.FhylShared;
@@ -33,8 +36,88 @@ const state = {
   listModalLastFocused: null,
   detailsRequestId: 0,
   searchRequestId: 0,
+  categoryRequestId: 0,
+  categoryCache: new Map(),
+  categoryPending: new Map(),
+  categoryNextPage: new Map(),
+  categoryTotalPages: new Map(),
+  categoryLoadingMore: new Set(),
+  heroKeywordId: null,
+  heroKeywordPromise: null,
   trendingLoaded: false,
 };
+
+const TRENDING_TITLES_LIMIT = 24;
+const CATEGORY_TITLES_LIMIT = 24;
+const TOP_RATED_LIMIT = 250;
+
+const CATEGORY_CONFIG = Object.freeze({
+  "top-250": {
+    title: "Top 250 mais bem avaliados",
+    description: "Os 250 filmes mais bem avaliados no TMDB. Este ranking é uma aproximação, não a lista oficial do IMDb.",
+    mode: "top-rated",
+  },
+  acao: {
+    title: "Ação",
+    description: "Filmes de ação para assistir quando você quer adrenalina.",
+    mode: "discover",
+    genreId: "28",
+  },
+  comedia: {
+    title: "Comédia",
+    description: "Histórias leves e divertidas para qualquer momento.",
+    mode: "discover",
+    genreId: "35",
+  },
+  aventura: {
+    title: "Aventura",
+    description: "Jornadas, descobertas e grandes desafios.",
+    mode: "discover",
+    genreId: "12",
+  },
+  animacao: {
+    title: "Animação",
+    description: "Filmes animados para todas as idades.",
+    mode: "discover",
+    genreId: "16",
+  },
+  terror: {
+    title: "Terror",
+    description: "Suspense, medo e histórias assustadoras.",
+    mode: "discover",
+    genreId: "27",
+  },
+  herois: {
+    title: "Heróis",
+    description: "Filmes de super-heróis e personagens extraordinários.",
+    mode: "discover",
+    keywordQuery: "superhero",
+  },
+  drama: {
+    title: "Drama",
+    description: "Histórias intensas, humanas e emocionantes.",
+    mode: "discover",
+    genreId: "18",
+  },
+  "ficcao-cientifica": {
+    title: "Ficção científica",
+    description: "Mundos possíveis, tecnologia e novas fronteiras.",
+    mode: "discover",
+    genreId: "878",
+  },
+  fantasia: {
+    title: "Fantasia",
+    description: "Mundos mágicos, criaturas e aventuras extraordinárias.",
+    mode: "discover",
+    genreId: "14",
+  },
+  suspense: {
+    title: "Suspense",
+    description: "Mistérios e histórias que prendem sua atenção.",
+    mode: "discover",
+    genreId: "53",
+  },
+});
 
 const elements = {
   homeView: document.querySelector("#home-view"),
@@ -58,6 +141,8 @@ const elements = {
   modalClose: document.querySelector("#modal-close"),
   detailsContent: document.querySelector("#details-content"),
   welcomeMessage: document.querySelector("#welcome-message"),
+  headerSearchForm: document.querySelector("#header-search-form"),
+  headerListsLink: document.querySelector("#header-lists-link"),
   onboardingForm: document.querySelector("#onboarding-form"),
   usernameInput: document.querySelector("#username-input"),
   onboardingStatus: document.querySelector("#onboarding-status"),
@@ -69,7 +154,25 @@ const elements = {
   searchEmptyState: document.querySelector("#search-empty-state"),
   searchMovieGrid: document.querySelector("#search-movie-grid"),
   searchResultMeta: document.querySelector("#search-result-meta"),
+  brand: document.querySelector(".brand"),
+  myListsView: document.querySelector("#my-lists-view"),
+  myListsContent: document.querySelector("#my-lists-content"),
+  categoryNav: document.querySelector("#category-nav"),
+  categoryView: document.querySelector("#category-view"),
+  categoryTitle: document.querySelector("#category-title"),
+  categoryDescription: document.querySelector("#category-description"),
+  categoryNotice: document.querySelector("#category-notice"),
+  categoryLoadingState: document.querySelector("#category-loading-state"),
+  categoryEmptyState: document.querySelector("#category-empty-state"),
+  categoryMovieGrid: document.querySelector("#category-movie-grid"),
+  categoryLoadMore: document.querySelector("#category-load-more"),
 };
+
+const MY_LISTS_CONFIG = [
+  { id: "watched", title: "Assistidos" },
+  { id: "to-watch", title: "Quero assistir" },
+  { id: "favorites", title: "Favoritos" },
+];
 
 const listContextMenu = createListContextMenu({
   getLists: () => state.lists,
@@ -77,6 +180,7 @@ const listContextMenu = createListContextMenu({
     state.lists = lists;
     renderLists();
     if (state.activeListId) renderListView(state.activeListId);
+    if (getCurrentRoute().name === "minhas-listas") renderMyListsView();
   },
 });
 
@@ -95,6 +199,8 @@ function setLoading(isLoading) {
 }
 
 function renderLists() {
+  if (!elements.listsGrid) return;
+
   elements.listsGrid.replaceChildren();
 
   state.lists.forEach((list) => {
@@ -226,7 +332,7 @@ function renderMovies(movies, meta = "") {
 
 function handleSearch(event) {
   event.preventDefault();
-  const query = elements.searchInput.value.trim();
+  const query = new FormData(event.currentTarget).get("query")?.toString().trim();
   if (!query) return;
   navigateToRoute("search", { q: query });
 }
@@ -234,7 +340,10 @@ function handleSearch(event) {
 function getCurrentRoute() {
   const routeText = window.location.hash.replace(/^#\/?/, "");
   const [path, queryString = ""] = routeText.split("?");
-  const name = path === "search" || path === "onboarding" ? path : "home";
+  const name =
+    path === "search" || path === "onboarding" || path === "minhas-listas" || path === "categoria"
+      ? path
+      : "home";
   return { name, params: new URLSearchParams(queryString) };
 }
 
@@ -319,6 +428,28 @@ async function loadSearchResults(query) {
   }
 }
 
+function updateCategoryNav(route, username) {
+  const isVisible = route.name !== "onboarding" && Boolean(username);
+  if (elements.categoryNav) {
+    elements.categoryNav.hidden = !isVisible;
+  }
+  if (elements.headerSearchForm) {
+    elements.headerSearchForm.hidden = !isVisible;
+  }
+  if (elements.headerListsLink) {
+    elements.headerListsLink.hidden = !isVisible;
+  }
+
+  const activeTab = route.name === "categoria"
+    ? route.params.get("tab")
+    : route.name === "minhas-listas" ? "minhas-listas" : "";
+  document.querySelectorAll("[data-category-tab]").forEach((link) => {
+    const isActive = link.dataset.categoryTab === activeTab;
+    link.classList.toggle("is-active", isActive);
+    link.setAttribute("aria-current", isActive ? "page" : "false");
+  });
+}
+
 function renderRoute() {
   const route = getCurrentRoute();
   const username = localStorage.getItem("fhyl-username")?.trim();
@@ -331,6 +462,19 @@ function renderRoute() {
   elements.homeView.hidden = route.name !== "home";
   elements.onboardingView.hidden = route.name !== "onboarding";
   elements.searchView.hidden = route.name !== "search";
+  if (elements.categoryView) {
+    elements.categoryView.hidden = route.name !== "categoria";
+  }
+  if (elements.myListsView) {
+    elements.myListsView.hidden = route.name !== "minhas-listas";
+  }
+
+  updateCategoryNav(route, username);
+
+
+  if (route.name !== "search") state.searchRequestId += 1;
+  if (route.name !== "categoria") state.categoryRequestId += 1;
+
   elements.welcomeMessage.textContent = route.name === "onboarding"
     ? ""
     : username
@@ -345,14 +489,30 @@ function renderRoute() {
     return;
   }
 
+  if (route.name === "categoria") {
+    const tab = route.params.get("tab") || "top-250";
+    if (!CATEGORY_CONFIG[tab]) {
+      navigateToRoute("categoria", { tab: "top-250" }, true);
+      return;
+    }
+    document.title = `Fhyl — ${CATEGORY_CONFIG[tab].title}`;
+    loadCategoryResults(tab);
+    return;
+  }
+
   if (route.name === "search") {
     document.title = "Fhyl — Busca";
     loadSearchResults(route.params.get("q")?.trim() || "");
     return;
   }
 
+  if (route.name === "minhas-listas") {
+    document.title = "Fhyl — Minhas Listas";
+    renderMyListsView();
+    return;
+  }
+
   document.title = "Fhyl — Filmes e Séries";
-  state.searchRequestId += 1;
   if (!state.trendingLoaded) loadTrendingTitles();
 }
 
@@ -361,10 +521,17 @@ async function loadTrendingTitles() {
   setLoading(true);
 
   try {
-    const payload = await fetchJson(`${TMDB_BASE_URL}/trending/all/week?language=pt-BR`, state.token);
-    const titles = (payload.results || []).filter(
-      (result) => result.media_type === "movie" || result.media_type === "tv",
+    const payloads = await Promise.all(
+      [1, 2].map((page) => fetchJson(
+        `${TMDB_BASE_URL}/trending/all/week?language=pt-BR&page=${page}`,
+        state.token,
+      )),
     );
+    const titles = payloads
+      .flatMap((payload) => (payload.results || []).filter(
+        (result) => result.media_type === "movie" || result.media_type === "tv",
+      ))
+      .slice(0, TRENDING_TITLES_LIMIT);
     state.trendingLoaded = true;
     const countLabel = `${titles.length} título${titles.length === 1 ? "" : "s"} em alta nesta semana`;
     setLoading(false);
@@ -381,6 +548,264 @@ async function loadTrendingTitles() {
       ? "O token do TMDB foi recusado. Confira se você colou o API Read Access Token correto."
       : "Não foi possível carregar os títulos em alta agora.";
     setNotice(message, "error");
+  }
+}
+
+function setCategoryNotice(message = "", type = "") {
+  elements.categoryNotice.textContent = message;
+  elements.categoryNotice.className = `notice ${type}`.trim();
+  elements.categoryNotice.hidden = !message;
+}
+
+function setCategoryLoading(isLoading) {
+  elements.categoryLoadingState.hidden = !isLoading;
+  if (isLoading) {
+    elements.categoryEmptyState.hidden = true;
+    elements.categoryMovieGrid.replaceChildren();
+  }
+}
+
+function dedupeMovies(movies) {
+  const seen = new Set();
+  return movies.filter((movie) => {
+    if (!movie?.id) return false;
+    const key = `${movie.media_type || "movie"}:${movie.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function setCategoryLoadMoreState(hasMore, isLoading = false) {
+  if (!elements.categoryLoadMore) return;
+  elements.categoryLoadMore.hidden = !hasMore;
+  elements.categoryLoadMore.textContent = isLoading
+    ? "Carregando mais filmes..."
+    : "Continue rolando para carregar mais filmes...";
+}
+
+function updateCategoryLoadMoreObserver(shouldObserve) {
+  if (!categoryLoadMoreObserver || !elements.categoryLoadMore) return;
+  if (shouldObserve) {
+    categoryLoadMoreObserver.observe(elements.categoryLoadMore);
+  } else {
+    categoryLoadMoreObserver.unobserve(elements.categoryLoadMore);
+  }
+}
+
+function renderCategoryMovies(movies, isRanked = false) {
+  elements.categoryMovieGrid.classList.toggle("is-ranked-list", isRanked);
+  elements.categoryMovieGrid.replaceChildren();
+  elements.categoryEmptyState.hidden = movies.length > 0;
+
+  if (!movies.length) return;
+
+  const fragment = document.createDocumentFragment();
+  movies.forEach((movie, index) => fragment.append(createMovieCard(movie, {
+    onDetails: openDetails,
+    onContextMenu: (selectedMovie, event) => listContextMenu.open(
+      selectedMovie,
+      event.clientX,
+      event.clientY,
+    ),
+    rank: isRanked ? index + 1 : null,
+  })));
+  elements.categoryMovieGrid.append(fragment);
+}
+
+async function resolveKeywordId(query) {
+  if (state.heroKeywordId) return state.heroKeywordId;
+  if (state.heroKeywordPromise) return state.heroKeywordPromise;
+
+  state.heroKeywordPromise = (async () => {
+    const params = new URLSearchParams({ query, page: "1" });
+    const payload = await fetchJson(`${TMDB_BASE_URL}/search/keyword?${params.toString()}`, state.token);
+    const normalizedQuery = query.toLowerCase();
+    const keyword = (payload.results || []).find(
+      (item) => item?.name?.toLowerCase() === normalizedQuery,
+    ) || (payload.results || [])[0];
+    if (!keyword?.id) {
+      throw new Error("Não encontramos uma palavra-chave para esta categoria.");
+    }
+    state.heroKeywordId = keyword.id;
+    return keyword.id;
+  })().finally(() => {
+    state.heroKeywordPromise = null;
+  });
+
+  return state.heroKeywordPromise;
+}
+
+async function loadTopRatedMovies() {
+  const movies = [];
+  const seen = new Set();
+  let page = 1;
+  let totalPages = 1;
+
+  while (movies.length < TOP_RATED_LIMIT && page <= totalPages) {
+    const params = new URLSearchParams({
+      language: "pt-BR",
+      page: String(page),
+    });
+    const payload = await fetchJson(`${TMDB_BASE_URL}/movie/top_rated?${params.toString()}`, state.token);
+    const results = Array.isArray(payload.results) ? payload.results : [];
+    results.forEach((movie) => {
+      if (!movie?.id || seen.has(movie.id)) return;
+      seen.add(movie.id);
+      movies.push({ ...movie, media_type: "movie" });
+    });
+    totalPages = Number(payload.total_pages) || page;
+    if (!results.length) break;
+    page += 1;
+  }
+
+  return movies.slice(0, TOP_RATED_LIMIT);
+}
+
+async function getDiscoverBaseParams(config) {
+  const keywordId = config.keywordQuery ? await resolveKeywordId(config.keywordQuery) : null;
+  const baseParams = {
+    language: "pt-BR",
+    include_adult: "false",
+    include_video: "false",
+    sort_by: "popularity.desc",
+  };
+  if (config.genreId) baseParams.with_genres = config.genreId;
+  if (keywordId) baseParams.with_keywords = String(keywordId);
+  return baseParams;
+}
+
+async function loadDiscoverPage(config, page) {
+  const baseParams = await getDiscoverBaseParams(config);
+  const params = new URLSearchParams({ ...baseParams, page: String(page) });
+  const payload = await fetchJson(`${TMDB_BASE_URL}/discover/movie?${params.toString()}`, state.token);
+  return {
+    movies: dedupeMovies(payload.results || []),
+    totalPages: Number(payload.total_pages) || page,
+  };
+}
+
+async function loadDiscoverMovies(config) {
+  const payloads = await Promise.all([1, 2].map((page) => loadDiscoverPage(config, page)));
+  return {
+    movies: dedupeMovies(payloads.flatMap((payload) => payload.movies)),
+    totalPages: Math.max(...payloads.map((payload) => payload.totalPages)),
+  };
+}
+
+async function loadCategoryResults(tab) {
+  const config = CATEGORY_CONFIG[tab];
+  if (!config) return;
+
+  const requestId = ++state.categoryRequestId;
+  elements.categoryTitle.textContent = config.title;
+  elements.categoryDescription.textContent = config.description;
+  elements.categoryMovieGrid.replaceChildren();
+  setCategoryNotice();
+  setCategoryLoading(true);
+  setCategoryLoadMoreState(false);
+  updateCategoryLoadMoreObserver(false);
+
+  const cachedMovies = state.categoryCache.get(tab);
+  if (cachedMovies) {
+    setCategoryLoading(false);
+    renderCategoryMovies(cachedMovies, config.mode === "top-rated");
+    setCategoryLoadMoreState(
+      config.mode !== "top-rated" && hasMoreCategoryResults(tab),
+    );
+    updateCategoryLoadMoreObserver(config.mode !== "top-rated");
+    return;
+  }
+
+  try {
+    if (config.mode === "top-rated") {
+      const movies = await loadTopRatedMovies();
+      if (requestId !== state.categoryRequestId) return;
+      state.categoryCache.set(tab, movies);
+      state.categoryPending.delete(tab);
+      state.categoryNextPage.delete(tab);
+      state.categoryTotalPages.delete(tab);
+      setCategoryLoading(false);
+      renderCategoryMovies(movies, true);
+      setCategoryLoadMoreState(false);
+      updateCategoryLoadMoreObserver(false);
+      return;
+    }
+
+    const result = await loadDiscoverMovies(config);
+    if (requestId !== state.categoryRequestId) return;
+    const movies = result.movies.slice(0, CATEGORY_TITLES_LIMIT);
+    state.categoryCache.set(tab, movies);
+    state.categoryPending.set(tab, result.movies.slice(CATEGORY_TITLES_LIMIT));
+    state.categoryNextPage.set(tab, 3);
+    state.categoryTotalPages.set(tab, result.totalPages);
+    setCategoryLoading(false);
+    renderCategoryMovies(movies);
+    setCategoryLoadMoreState(hasMoreCategoryResults(tab));
+    updateCategoryLoadMoreObserver(true);
+  } catch (error) {
+    if (requestId !== state.categoryRequestId) return;
+    setCategoryLoading(false);
+    setCategoryLoadMoreState(false);
+    updateCategoryLoadMoreObserver(false);
+    elements.categoryEmptyState.hidden = false;
+    const message = error.status === 401 || error.status === 403
+      ? "O token do TMDB foi recusado. Confira se você colou o API Read Access Token correto."
+      : error.message || "Não foi possível carregar esta categoria agora.";
+    setCategoryNotice(message, "error");
+  }
+}
+
+function hasMoreCategoryResults(tab) {
+  const pending = state.categoryPending.get(tab) || [];
+  const nextPage = state.categoryNextPage.get(tab) || 1;
+  const totalPages = state.categoryTotalPages.get(tab) || 0;
+  return pending.length > 0 || nextPage <= totalPages;
+}
+
+async function loadMoreCategoryResults() {
+  const route = getCurrentRoute();
+  const tab = route.name === "categoria" ? route.params.get("tab") : "";
+  const config = CATEGORY_CONFIG[tab];
+  if (!config || config.mode === "top-rated" || state.categoryLoadingMore.has(tab)) return;
+  if (!hasMoreCategoryResults(tab)) {
+    setCategoryLoadMoreState(false);
+    updateCategoryLoadMoreObserver(false);
+    return;
+  }
+
+  const requestId = state.categoryRequestId;
+  state.categoryLoadingMore.add(tab);
+  setCategoryLoadMoreState(true, true);
+
+  try {
+    let additions = [];
+    const pending = state.categoryPending.get(tab) || [];
+    if (pending.length) {
+      additions = pending.splice(0, CATEGORY_TITLES_LIMIT);
+      state.categoryPending.set(tab, pending);
+    } else {
+      const page = state.categoryNextPage.get(tab) || 1;
+      const result = await loadDiscoverPage(config, page);
+      if (requestId !== state.categoryRequestId || getCurrentRoute().params.get("tab") !== tab) return;
+      additions = result.movies;
+      state.categoryNextPage.set(tab, page + 1);
+      state.categoryTotalPages.set(tab, result.totalPages);
+    }
+
+    if (requestId !== state.categoryRequestId || getCurrentRoute().params.get("tab") !== tab) return;
+    const currentMovies = state.categoryCache.get(tab) || [];
+    const movies = dedupeMovies([...currentMovies, ...additions]);
+    state.categoryCache.set(tab, movies);
+    renderCategoryMovies(movies);
+    setCategoryLoadMoreState(hasMoreCategoryResults(tab));
+    updateCategoryLoadMoreObserver(true);
+  } catch (error) {
+    if (requestId !== state.categoryRequestId) return;
+    setCategoryLoadMoreState(true);
+    setCategoryNotice(error.message || "Não foi possível carregar mais filmes agora.", "error");
+  } finally {
+    state.categoryLoadingMore.delete(tab);
   }
 }
 
@@ -417,6 +842,7 @@ function createDetailsAction(movie, listId, labels) {
     persistLists(state.lists);
     renderLists();
     if (state.activeListId) renderListView(state.activeListId);
+    if (getCurrentRoute().name === "minhas-listas") renderMyListsView();
     renderDetails(movie);
   });
   return button;
@@ -645,11 +1071,68 @@ function closeDetails() {
   }
 }
 
+function renderMyListsView() {
+  if (!elements.myListsContent) return;
+  elements.myListsContent.replaceChildren();
+
+  MY_LISTS_CONFIG.forEach(({ id, title }) => {
+    const list = getList(id);
+    const movies = Array.isArray(list?.movies) ? list.movies : [];
+
+    const section = document.createElement("section");
+    section.className = "my-lists-section";
+    section.setAttribute("aria-labelledby", `my-list-heading-${id}`);
+
+    const heading = document.createElement("div");
+    heading.className = "section-heading";
+
+    const titleGroup = document.createElement("div");
+    titleGroup.className = "section-heading-main";
+    const name = document.createElement("h2");
+    name.id = `my-list-heading-${id}`;
+    name.textContent = title;
+    titleGroup.append(name);
+
+    const count = document.createElement("p");
+    count.className = "result-meta";
+    count.textContent = `${movies.length} título${movies.length === 1 ? "" : "s"}`;
+    heading.append(titleGroup, count);
+    section.append(heading);
+
+    if (movies.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state my-lists-empty-state";
+      const message = document.createElement("p");
+      message.textContent = "Nenhum filme adicionado";
+      empty.append(message);
+      section.append(empty);
+    } else {
+      const grid = document.createElement("div");
+      grid.className = "movie-grid";
+      const fragment = document.createDocumentFragment();
+      movies.forEach((movie) => {
+        fragment.append(
+          createMovieCard(movie, {
+            onDetails: openDetails,
+            onContextMenu: (selectedMovie, event) =>
+              listContextMenu.open(selectedMovie, event.clientX, event.clientY),
+          }),
+        );
+      });
+      grid.append(fragment);
+      section.append(grid);
+    }
+
+    elements.myListsContent.append(section);
+  });
+}
+
 function refreshLists() {
   state.lists = loadLists();
   persistLists(state.lists);
   renderLists();
   if (state.activeListId) renderListView(state.activeListId);
+  if (getCurrentRoute().name === "minhas-listas") renderMyListsView();
 }
 
 globalThis.FhylHome = Object.freeze({
@@ -658,7 +1141,14 @@ globalThis.FhylHome = Object.freeze({
 });
 
 elements.searchForm.addEventListener("submit", handleSearch);
+elements.headerSearchForm?.addEventListener("submit", handleSearch);
 elements.searchHomeLink.addEventListener("click", () => navigateToRoute("home"));
+elements.brand?.addEventListener("click", (e) => {
+  if (e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+    e.preventDefault();
+    navigateToRoute("home");
+  }
+});
 elements.onboardingForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const username = elements.usernameInput.value.trim();
@@ -689,6 +1179,12 @@ elements.listModalBackdrop.addEventListener("click", (event) => {
 });
 window.addEventListener("hashchange", renderRoute);
 window.addEventListener("popstate", renderRoute);
+
+const categoryLoadMoreObserver = typeof IntersectionObserver === "function"
+  ? new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting)) loadMoreCategoryResults();
+  }, { rootMargin: "480px 0px" })
+  : null;
 
 state.token = normalizeToken(TMDB_TOKEN);
 refreshLists();
